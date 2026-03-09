@@ -1,6 +1,6 @@
-import {OverlayTickEnvelopeSchema} from "./schemas";
+import { OverlayMessageSchema } from "./schemas";
 import { useOverlayStore } from "../store/overlayStore";
-import {envelopeToUi} from "./mapTick";
+import { snapshotToUi } from "./mapTick";
 
 type Options = {
   url: string;
@@ -36,14 +36,15 @@ export function startWsClient({ url, staleMs = 2000 }: Options) {
     ws = new WebSocket(url);
 
     ws.onopen = () => {
-      console.log("[ws] open", url);
+      console.log("[ws] connected to", url);
       retry = 0;
       setConn("CONNECTED_IDLE");
       startStaleTimer();
     };
 
     ws.onclose = () => {
-      useOverlayStore.getState().setTick(null);
+      console.log("[ws] disconnected");
+      useOverlayStore.getState().setData(null);
       setConn("DISCONNECTED");
       const delay = Math.min(5000, 250 * Math.pow(2, retry++));
       setTimeout(connect, delay);
@@ -52,17 +53,26 @@ export function startWsClient({ url, staleMs = 2000 }: Options) {
     ws.onmessage = (ev) => {
       try {
         const raw = JSON.parse(ev.data);
-        const parsed = OverlayTickEnvelopeSchema.safeParse(raw);
-        if (!parsed.success) return;
+        const parsed = OverlayMessageSchema.safeParse(raw);
 
-        const ui = envelopeToUi(parsed.data);
-        useOverlayStore.getState().setTick(ui);
+        if (!parsed.success) {
+          console.warn("[ws] invalid message", parsed.error);
+          return;
+        }
 
-        // 연결 상태
-        useOverlayStore.getState().setConnection("CONNECTED_ACTIVE");
-      } catch {
-        // ignore
+        // OverlaySnapshot → OverlayUi 변환
+        const ui = snapshotToUi(parsed.data.snapshot);
+        useOverlayStore.getState().setData(ui);
+
+        lastTickAt = Date.now();
+        setConn("CONNECTED_ACTIVE");
+      } catch (err) {
+        console.error("[ws] parse error", err);
       }
+    };
+
+    ws.onerror = (err) => {
+      console.error("[ws] error", err);
     };
   };
 

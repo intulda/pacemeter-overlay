@@ -1,40 +1,55 @@
-import type {OverlayTick, OverlayTickEnvelope, OverlayTickUi} from "./schemas";
+import type { OverlaySnapshot, OverlayUi, ActorUi } from "./schemas";
 
-const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-
-export function formatElapsed(ms: number) {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}:${pad2(s)}`;
+/**
+ * 직업 추론 (임시)
+ * TODO: 백엔드에서 jobId 전송하도록 수정 필요
+ */
+function inferJob(name: string): string {
+  // 임시: 이름으로 추론 불가능하므로 기본값
+  // 추후 ActorSnapshot에 jobId 필드 추가 필요
+  return name ?? "DPS";
 }
 
-export function toOverlayTickUi(t: OverlayTick): OverlayTickUi {
-  const youDps = t.you.rdpsOnline.roll10s;     // 또는 total
-  const topDps = t.pace.expectedAtElapsed;     // "현재 시점 목표 dps"로 사용
-  const ratio = t.pace.ratio || (topDps > 0 ? youDps / topDps : 0);
+/**
+ * 백엔드 OverlaySnapshot → UI용 OverlayUi 변환
+ */
+export function snapshotToUi(snapshot: OverlaySnapshot): OverlayUi {
+  // 파티원 목록 변환
+  const actors: ActorUi[] = snapshot.actors.map((actor) => ({
+    id: actor.actorId.value,
+    name: actor.name,
+    job: inferJob(actor.name), // TODO: 백엔드에서 jobId 받도록 수정
+    dps: actor.dps,
+    rdps: actor.onlineRdps,
+    confidence: actor.rdpsConfidence.score,
+    damagePercent: actor.damagePercent,
+    recentDps: actor.recentDps,
+  }));
+
+  // 본인(YOU) 찾기 - 첫 번째 캐릭터를 본인으로 가정
+  // TODO: 백엔드에서 isYou 플래그 전송하도록 수정 필요
+  const you = actors.length > 0 ? {
+    dps: actors[0].dps,
+    rdps: actors[0].rdps,
+    confidence: actors[0].confidence,
+  } : null;
+
+  // 페이스 비교
+  const pace = snapshot.paceComparison ? {
+    label: snapshot.paceComparison.profileLabel,
+    expectedDps: snapshot.paceComparison.expectedCumulativeDamage / (snapshot.elapsedMs / 1000),
+    delta: snapshot.paceComparison.deltaDamage,
+    deltaPercent: snapshot.paceComparison.deltaPercent,
+  } : null;
 
   return {
-    you: { dps: youDps },
-    top: { dps: topDps },
-    delta: t.pace.delta,
-    percentage: ratio * 100,
-    elapsed: formatElapsed(t.combat.elapsedMs),
-  };
-}
-
-export function envelopeToUi(msg: OverlayTickEnvelope): OverlayTickUi {
-  const you = msg.snapshot.partyDps ?? 0;
-  const top = 0;
-
-  const delta = you - top;
-  const percentage = top > 0 ? (you / top) * 100 : 0;
-
-  return {
-    you: { dps: you },
-    top: { dps: top },
-    delta,
-    percentage,
-    elapsed: msg.snapshot.elapsedFormatted,
+    fightName: snapshot.fightName,
+    phase: snapshot.phase,
+    elapsed: snapshot.elapsedFormatted,
+    partyDps: snapshot.partyDps,
+    totalDamage: snapshot.totalPartyDamage,
+    you,
+    pace,
+    actors,
   };
 }

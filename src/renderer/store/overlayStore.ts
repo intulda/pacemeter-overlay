@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { OverlayTickUi } from "../ws/schemas";
+import type { OverlayUi } from "../ws/schemas";
 
 export type ConnectionState =
   | "DISCONNECTED"
@@ -7,47 +7,34 @@ export type ConnectionState =
   | "CONNECTED_ACTIVE"
   | "CONNECTED_STALE";
 
-export type SeriesPoint = { t: number; youCumulativeDps: number };
-
 type OverlayState = {
-    connection: ConnectionState;
-    tick: OverlayTickUi | null;
+  connection: ConnectionState;
+  data: OverlayUi | null;
 
-    // chart용(최근 N초)
-    series: SeriesPoint[];
-    seriesMaxLen: number;
+  // overlay behavior
+  locked: boolean;
+  showParty: boolean;
 
-    // overlay behavior
-    locked: boolean;
+  // actions
+  setConnection: (c: ConnectionState) => void;
+  setData: (d: OverlayUi | null) => void;
 
-    // actions
-    setConnection: (c: ConnectionState) => void;
-    setTick: (t: OverlayTickUi | null) => void;
-    pushSeriesPoint: (p: SeriesPoint) => void;
-
-    toggleLocked: () => void;
-    setLocked: (v: boolean) => void;
+  toggleLocked: () => void;
+  toggleShowParty: () => void;
+  setLocked: (v: boolean) => void;
 };
 
-export const useOverlayStore = create<OverlayState>((set, get) => ({
-    connection: "DISCONNECTED",
-    tick: null,
+export const useOverlayStore = create<OverlayState>((set) => ({
+  connection: "DISCONNECTED",
+  data: null,
 
-    series: [],
-    seriesMaxLen: 120, // 최근 2분(1초 tick 기준). 취향대로 60~180
+  locked: false,
+  showParty: false,
 
-    locked: false,
+  setConnection: (c) => set({ connection: c }),
+  setData: (d) => set({ data: d }),
 
-    setConnection: (c) => set({ connection: c }),
-    setTick: (t) => set({ tick: t }),
-
-    pushSeriesPoint: (p) => {
-        const { series, seriesMaxLen } = get();
-        const next = [...series, p];
-        const trimmed = next.length > seriesMaxLen ? next.slice(next.length - seriesMaxLen) : next;
-        set({ series: trimmed });
-    },
-
-    toggleLocked: () => set((s) => ({ locked: !s.locked })),
-    setLocked: (v) => set({ locked: v }),
+  toggleLocked: () => set((s) => ({ locked: !s.locked })),
+  toggleShowParty: () => set((s) => ({ showParty: !s.showParty })),
+  setLocked: (v) => set({ locked: v }),
 }));

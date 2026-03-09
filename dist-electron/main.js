@@ -14,10 +14,9 @@ function createWindow() {
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     width: 320,
-    height: 120,
     alwaysOnTop: true,
     frame: false,
-    transparent: false,
+    transparent: true,
     opacity: 0.95,
     resizable: true,
     fullscreenable: false,
@@ -25,7 +24,6 @@ function createWindow() {
       preload: path.join(__dirname$1, "preload.mjs")
     }
   });
-  win.setMinimumSize(280, 100);
   win.webContents.on("did-finish-load", () => {
     win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
   });

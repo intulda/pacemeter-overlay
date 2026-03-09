@@ -1,57 +1,106 @@
 import { z } from "zod";
 
-export type OverlayTickUi = {
-  you: { dps: number };
-  top: { dps: number };
-  delta: number;
-  percentage: number;
-  elapsed: string;
-};
+// ============================================================================
+// Backend 타입 정의 (Java OverlaySnapshot 구조와 일치)
+// ============================================================================
 
-export const OverlayTickSchema = z.object({
-  type: z.literal("overlay_tick"),
-  ts: z.number(),
-  combat: z.object({
-    inCombat: z.boolean(),
-    elapsedMs: z.number(),
-    encounterKey: z.string().optional(),
-  }),
-  you: z.object({
-    ndps: z.object({
-      total: z.number(),
-      roll10s: z.number(),
-    }),
-    rdpsOnline: z.object({
-      total: z.number(),
-      roll10s: z.number(),
-      confidence: z.number(), // 0~1
-    }),
-  }),
-  pace: z.object({
-    profileId: z.string(),
-    expectedAtElapsed: z.number(),
-    delta: z.number(),
-    ratio: z.number(),
-  }),
+export const ActorIdSchema = z.object({
+  value: z.number(),
+});
+
+export const ConfidenceSchema = z.object({
+  score: z.number(), // 0.0 ~ 1.0
+  reasons: z.array(z.string()),
+});
+
+export const ActorSnapshotSchema = z.object({
+  actorId: ActorIdSchema,
+  name: z.string(),
+  totalDamage: z.number(),
+  dps: z.number(),
+  onlineRdps: z.number(),
+  rdpsConfidence: ConfidenceSchema,
+  damagePercent: z.number(), // 0.0 ~ 1.0
+  hitCount: z.number(),
+  recentDps: z.number(),
+});
+
+export const PaceComparisonSchema = z.object({
+  profileLabel: z.string(),
+  expectedCumulativeDamage: z.number(),
+  actualCumulativeDamage: z.number(),
+  deltaDamage: z.number(),
+  deltaPercent: z.number(),
+  projectedKillTimeMs: z.number(),
+  referenceKillTimeMs: z.number(),
 });
 
 export const OverlaySnapshotSchema = z.object({
   fightName: z.string(),
-  phase: z.union([z.literal("ACTIVE"), z.literal("ENDED")]).or(z.string()),
+  phase: z.enum(["IDLE", "ACTIVE", "ENDED"]),
   elapsedMs: z.number(),
   elapsedFormatted: z.string(),
   totalPartyDamage: z.number(),
   partyDps: z.number(),
-  actors: z.array(z.any()), // MVP: 일단 any, 나중에 ActorSnapshot 스키마로 강화
-  paceComparison: z.any().nullable(), // MVP
+  actors: z.array(ActorSnapshotSchema),
+  paceComparison: PaceComparisonSchema.nullable(),
   isFinal: z.boolean(),
 });
 
-export const OverlayTickEnvelopeSchema = z.object({
-  type: z.literal("overlay_tick"),
+export const OverlayMessageSchema = z.object({
+  type: z.literal("snapshot"),
   snapshot: OverlaySnapshotSchema,
 });
 
-export type OverlayTickEnvelope = z.infer<typeof OverlayTickEnvelopeSchema>;
+// ============================================================================
+// UI 타입 정의 (화면 렌더링용)
+// ============================================================================
+
+export type ActorUi = {
+  id: number;
+  name: string;
+  job: string; // TODO: 직업 감지 로직 추가 필요
+  dps: number;
+  rdps: number;
+  confidence: number;
+  damagePercent: number;
+  recentDps: number;
+};
+
+export type OverlayUi = {
+  fightName: string;
+  phase: "IDLE" | "ACTIVE" | "ENDED";
+  elapsed: string;
+
+  // 파티 전체
+  partyDps: number;
+  totalDamage: number;
+
+  // 본인 (YOU)
+  you: {
+    dps: number;
+    rdps: number;
+    confidence: number;
+  } | null;
+
+  // 페이스 비교
+  pace: {
+    label: string;
+    expectedDps: number;
+    delta: number;
+    deltaPercent: number;
+  } | null;
+
+  // 파티원 목록
+  actors: ActorUi[];
+};
+
+// ============================================================================
+// Zod 타입 추론
+// ============================================================================
+
 export type OverlaySnapshot = z.infer<typeof OverlaySnapshotSchema>;
-export type OverlayTick = z.infer<typeof OverlayTickSchema>;
+export type ActorSnapshot = z.infer<typeof ActorSnapshotSchema>;
+export type PaceComparison = z.infer<typeof PaceComparisonSchema>;
+export type Confidence = z.infer<typeof ConfidenceSchema>;
+export type OverlayMessage = z.infer<typeof OverlayMessageSchema>;
