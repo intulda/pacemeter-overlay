@@ -41,12 +41,11 @@ function createWindow() {
     },
   })
   // win.setMinimumSize(280, 100)
-
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
   })
-
+  win.setAlwaysOnTop(true, 'screen-saver');
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
     win.webContents.openDevTools()  // 개발자 도구 자동 열기

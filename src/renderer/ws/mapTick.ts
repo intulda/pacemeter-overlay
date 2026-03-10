@@ -47,6 +47,9 @@ function jobIdToName(jobId: number): string {
  * 백엔드 OverlaySnapshot → UI용 OverlayUi 변환
  */
 export function snapshotToUi(snapshot: OverlaySnapshot): OverlayUi {
+  // elapsedSec: 0으로 나누기 방지
+  const elapsedSec = snapshot.elapsedMs > 0 ? snapshot.elapsedMs / 1000 : 1;
+
   // 파티원 목록 변환
   const actors: ActorUi[] = snapshot.actors.map((actor) => ({
     id: actor.actorId.value,
@@ -66,21 +69,29 @@ export function snapshotToUi(snapshot: OverlaySnapshot): OverlayUi {
     dps: youActor.dps,
     rdps: youActor.onlineRdps,
     confidence: youActor.rdpsConfidence.score,
-    individualPace: youActor.individualPace ? {
-      label: youActor.individualPace.profileLabel,
-      expectedDps: youActor.individualPace.expectedCumulativeDamage / (snapshot.elapsedMs / 1000),
-      delta: youActor.individualPace.deltaDamage,
-      deltaPercent: youActor.individualPace.deltaPercent,
-    } : null,
+    individualPace: youActor.individualPace ? (() => {
+      const topRdps = youActor.individualPace!.expectedCumulativeDamage / elapsedSec;
+      return {
+        label: youActor.individualPace!.profileLabel,
+        expectedDps: topRdps,
+        // delta = 내 rDPS - TOP rDPS (양수=앞서고 있음, 음수=뒤처짐)
+        delta: youActor.onlineRdps - topRdps,
+        deltaPercent: youActor.individualPace!.deltaPercent,
+      };
+    })() : null,
   } : null;
 
   // 파티 페이스 비교
-  const pace = snapshot.partyPace ? {
-    label: snapshot.partyPace.profileLabel,
-    expectedDps: snapshot.partyPace.expectedCumulativeDamage / (snapshot.elapsedMs / 1000),
-    delta: snapshot.partyPace.deltaDamage,
-    deltaPercent: snapshot.partyPace.deltaPercent,
-  } : null;
+  const pace = snapshot.partyPace ? (() => {
+    const topPartyDps = snapshot.partyPace!.expectedCumulativeDamage / elapsedSec;
+    return {
+      label: snapshot.partyPace!.profileLabel,
+      expectedDps: topPartyDps,
+      // delta = 우리 파티 DPS - TOP 파티 DPS (양수=앞서고 있음, 음수=뒤처짐)
+      delta: snapshot.partyDps - topPartyDps,
+      deltaPercent: snapshot.partyPace!.deltaPercent,
+    };
+  })() : null;
 
   return {
     fightName: snapshot.fightName,

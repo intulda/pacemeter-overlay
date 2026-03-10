@@ -29,6 +29,8 @@ const getJobColor = (job: string): string => {
 export const Hud = () => {
   const { data, connection, locked, toggleLocked, showParty, toggleShowParty } = useOverlayStore();
 
+  console.log(data);
+
   // 데이터가 없으면 빈 화면
   if (!data) {
     return (
@@ -41,9 +43,9 @@ export const Hud = () => {
     );
   }
 
-  const youDps = data.you?.dps ?? 0;
-  const topDps = data.pace?.expectedDps ?? data.partyDps;
-  const percentage = topDps > 0 ? (youDps / topDps) * 100 : 0;
+  const youRdps = data.you?.rdps ?? 0;
+  const topIndividualDps = data.you?.individualPace?.expectedDps ?? 0;
+  const percentage = topIndividualDps > 0 ? (youRdps / topIndividualDps) * 100 : 0;
   const pct = clamp(percentage, 0, 100);
 
   const isActive = connection === 'CONNECTED_ACTIVE';
@@ -66,37 +68,55 @@ export const Hud = () => {
         </button>
       </div>
 
-      {/* 상단: YOU vs TOP */}
-      <div className="flex justify-between items-end mb-1">
-        <div className="flex flex-col">
-          <span className="text-[10px] text-cyan-400 leading-none">YOU</span>
-          <span className="text-xl font-bold leading-none">{formatInt(youDps)}</span>
-          <span className="text-[10px] text-gray-400">
-            {data.pace ? data.pace.label : "PARTY"} {formatInt(topDps)}
-          </span>
+      {/* 개인 rDPS 비교: 왼쪽=내 rDPS / 오른쪽=TOP rDPS (차이) */}
+      {data.you && (
+        <div className="flex justify-between items-baseline mb-1">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-cyan-400 leading-none">rDPS</span>
+            <span className="text-xl font-bold leading-none tabular-nums">
+              {formatInt(data.you.rdps)}
+            </span>
+          </div>
+          {data.you.individualPace && (
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] text-gray-400 leading-none">TOP</span>
+              <span className="text-base font-semibold leading-none tabular-nums">
+                {formatInt(data.you.individualPace.expectedDps)}
+                {' '}
+                <span className={clsx(
+                  data.you.individualPace.delta >= 0 ? "text-green-400" : "text-red-400"
+                )}>
+                  ({formatDelta(data.you.individualPace.delta)})
+                </span>
+              </span>
+            </div>
+          )}
         </div>
+      )}
 
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] text-cyan-400 leading-none">DELTA</span>
-          {/* 개인 페이스: 랭킹1등 직업의 rDPS (내 rDPS와의 차이) */}
-          {data.you?.individualPace && (
-            <span
-              className={clsx(
-                "text-sm font-semibold leading-none tabular-nums",
-                data.you.individualPace.delta >= 0 ? "text-green-400" : "text-red-400"
-              )}
-            >
-              {formatInt(data.you.individualPace.expectedDps)} ({formatDelta(data.you.individualPace.delta)})
+      {/* 파티 DPS 비교: 왼쪽=파티 DPS / 오른쪽=TOP 파티 DPS (차이) */}
+      {data.pace && (
+        <div className="flex justify-between items-baseline mb-1">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-gray-400 leading-none">PARTY</span>
+            <span className="text-base font-bold leading-none tabular-nums">
+              {formatInt(data.partyDps)}
             </span>
-          )}
-          {/* 파티 페이스: 랭킹1등 파티의 rDPS (우리 파티 rDPS와의 차이) */}
-          {data.pace && (
-            <span className="text-[10px] text-gray-400">
-              Party: {formatInt(data.pace.expectedDps)} ({formatDelta(data.pace.delta)})
+          </div>
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] text-gray-400 leading-none">TOP</span>
+            <span className="text-sm font-semibold leading-none tabular-nums">
+              {formatInt(data.pace.expectedDps)}
+              {' '}
+              <span className={clsx(
+                data.pace.delta >= 0 ? "text-green-400" : "text-red-400"
+              )}>
+                ({formatDelta(data.pace.delta)})
+              </span>
             </span>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 중단: % / 타이틀 / 시간 */}
       <div className="flex justify-between items-center text-[11px] text-gray-300 mb-1.5 px-0.5 no-drag">
