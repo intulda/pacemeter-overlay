@@ -1,13 +1,46 @@
 import type { OverlaySnapshot, OverlayUi, ActorUi } from "./schemas";
 
 /**
- * 직업 추론 (임시)
- * TODO: 백엔드에서 jobId 전송하도록 수정 필요
+ * jobId → 직업명 변환 (FFXIV Job ID 매핑)
  */
-function inferJob(name: string): string {
-  // 임시: 이름으로 추론 불가능하므로 기본값
-  // 추후 ActorSnapshot에 jobId 필드 추가 필요
-  return name ?? "DPS";
+function jobIdToName(jobId: number): string {
+  const jobMap: Record<number, string> = {
+    // Tanks
+    0x01: "GLA",  // Gladiator
+    0x03: "MRD",  // Marauder
+    0x13: "PLD",  // Paladin
+    0x15: "WAR",  // Warrior
+    0x20: "DRK",  // Dark Knight
+    0x25: "GNB",  // Gunbreaker
+    // Healers
+    0x06: "CNJ",  // Conjurer
+    0x18: "WHM",  // White Mage
+    0x1C: "SCH",  // Scholar
+    0x21: "AST",  // Astrologian
+    0x28: "SGE",  // Sage
+    // Melee DPS
+    0x02: "PGL",  // Pugilist
+    0x04: "LNC",  // Lancer
+    0x14: "MNK",  // Monk
+    0x16: "DRG",  // Dragoon
+    0x1E: "NIN",  // Ninja
+    0x22: "SAM",  // Samurai
+    0x27: "RPR",  // Reaper
+    0x29: "VPR",  // Viper
+    // Physical Ranged
+    0x05: "ARC",  // Archer
+    0x17: "BRD",  // Bard
+    0x1F: "MCH",  // Machinist
+    0x26: "DNC",  // Dancer
+    // Magical Ranged
+    0x07: "THM",  // Thaumaturge
+    0x1A: "ACN",  // Arcanist
+    0x19: "BLM",  // Black Mage
+    0x1B: "SMN",  // Summoner
+    0x23: "RDM",  // Red Mage
+    0x2A: "PCT",  // Pictomancer
+  };
+  return jobMap[jobId] || "???";
 }
 
 /**
@@ -18,28 +51,35 @@ export function snapshotToUi(snapshot: OverlaySnapshot): OverlayUi {
   const actors: ActorUi[] = snapshot.actors.map((actor) => ({
     id: actor.actorId.value,
     name: actor.name,
-    job: inferJob(actor.name), // TODO: 백엔드에서 jobId 받도록 수정
+    job: jobIdToName(actor.jobId),
     dps: actor.dps,
     rdps: actor.onlineRdps,
     confidence: actor.rdpsConfidence.score,
     damagePercent: actor.damagePercent,
     recentDps: actor.recentDps,
+    isDead: actor.isDead,
   }));
 
-  // 본인(YOU) 찾기 - 첫 번째 캐릭터를 본인으로 가정
-  // TODO: 백엔드에서 isYou 플래그 전송하도록 수정 필요
-  const you = actors.length > 0 ? {
-    dps: actors[0].dps,
-    rdps: actors[0].rdps,
-    confidence: actors[0].confidence,
+  // 본인(YOU) 찾기 - individualPace가 있는 캐릭터가 본인
+  const youActor = snapshot.actors.find(a => a.individualPace !== null);
+  const you = youActor ? {
+    dps: youActor.dps,
+    rdps: youActor.onlineRdps,
+    confidence: youActor.rdpsConfidence.score,
+    individualPace: youActor.individualPace ? {
+      label: youActor.individualPace.profileLabel,
+      expectedDps: youActor.individualPace.expectedCumulativeDamage / (snapshot.elapsedMs / 1000),
+      delta: youActor.individualPace.deltaDamage,
+      deltaPercent: youActor.individualPace.deltaPercent,
+    } : null,
   } : null;
 
-  // 페이스 비교
-  const pace = snapshot.paceComparison ? {
-    label: snapshot.paceComparison.profileLabel,
-    expectedDps: snapshot.paceComparison.expectedCumulativeDamage / (snapshot.elapsedMs / 1000),
-    delta: snapshot.paceComparison.deltaDamage,
-    deltaPercent: snapshot.paceComparison.deltaPercent,
+  // 파티 페이스 비교
+  const pace = snapshot.partyPace ? {
+    label: snapshot.partyPace.profileLabel,
+    expectedDps: snapshot.partyPace.expectedCumulativeDamage / (snapshot.elapsedMs / 1000),
+    delta: snapshot.partyPace.deltaDamage,
+    deltaPercent: snapshot.partyPace.deltaPercent,
   } : null;
 
   return {

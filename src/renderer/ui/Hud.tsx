@@ -43,7 +43,6 @@ export const Hud = () => {
 
   const youDps = data.you?.dps ?? 0;
   const topDps = data.pace?.expectedDps ?? data.partyDps;
-  const delta = data.pace?.delta ?? 0;
   const percentage = topDps > 0 ? (youDps / topDps) * 100 : 0;
   const pct = clamp(percentage, 0, 100);
 
@@ -63,7 +62,7 @@ export const Hud = () => {
           className="no-drag text-[10px] px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20"
           title="Ctrl+Shift+O"
         >
-          {locked ? "🔒 LOCK" : "✋ MOVE"}
+          {locked ? "LOCK" : "MOVE"}
         </button>
       </div>
 
@@ -72,20 +71,30 @@ export const Hud = () => {
         <div className="flex flex-col">
           <span className="text-[10px] text-cyan-400 leading-none">YOU</span>
           <span className="text-xl font-bold leading-none">{formatInt(youDps)}</span>
+          <span className="text-[10px] text-gray-400">
+            {data.pace ? data.pace.label : "PARTY"} {formatInt(topDps)}
+          </span>
         </div>
 
         <div className="flex flex-col items-end">
-          <span className="text-[10px] text-gray-400 leading-none">
-            {data.pace ? data.pace.label : "PARTY"} {formatInt(topDps)}
-          </span>
-          <span
-            className={clsx(
-              "text-sm font-semibold leading-none tabular-nums",
-              delta >= 0 ? "text-green-400" : "text-red-400"
-            )}
-          >
-            {formatDelta(delta)}
-          </span>
+          <span className="text-[10px] text-cyan-400 leading-none">DELTA</span>
+          {/* 개인 페이스: 랭킹1등 직업의 rDPS (내 rDPS와의 차이) */}
+          {data.you?.individualPace && (
+            <span
+              className={clsx(
+                "text-sm font-semibold leading-none tabular-nums",
+                data.you.individualPace.delta >= 0 ? "text-green-400" : "text-red-400"
+              )}
+            >
+              {formatInt(data.you.individualPace.expectedDps)} ({formatDelta(data.you.individualPace.delta)})
+            </span>
+          )}
+          {/* 파티 페이스: 랭킹1등 파티의 rDPS (우리 파티 rDPS와의 차이) */}
+          {data.pace && (
+            <span className="text-[10px] text-gray-400">
+              Party: {formatInt(data.pace.expectedDps)} ({formatDelta(data.pace.delta)})
+            </span>
+          )}
         </div>
       </div>
 
@@ -132,24 +141,40 @@ export const Hud = () => {
             const barWidth = (actor.dps / maxDps) * 100;
 
             return (
-              <div key={actor.id} className="relative flex items-center justify-between h-6 px-2 rounded overflow-hidden">
+              <div
+                key={actor.id}
+                className={clsx(
+                  "relative flex items-center justify-between h-6 px-2 rounded overflow-hidden transition-opacity",
+                  actor.isDead && "opacity-40"
+                )}
+              >
                 <div
                   className="absolute left-0 top-0 h-full opacity-15"
                   style={{ width: `${barWidth}%`, backgroundColor: jobColor }}
                 />
                 <div className="flex items-center gap-2 z-10">
                   <span className="text-[9px] text-gray-500 w-3">{idx + 1}</span>
+                  {actor.isDead && <span className="text-[10px]">💀</span>}
                   <img
                     src={`/icons/jobs/${actor.job}.png`}
                     className="w-3.5 h-3.5 object-contain"
                     alt={actor.job}
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
-                  <span className="text-[11px] font-medium truncate w-24" style={{ color: jobColor }}>
+                  <span
+                    className={clsx(
+                      "text-[11px] font-medium truncate w-24",
+                      actor.isDead && "line-through"
+                    )}
+                    style={{ color: actor.isDead ? "#6B7280" : jobColor }}
+                  >
                     {actor.name}
                   </span>
                 </div>
-                <div className="z-10 text-[11px] font-bold tabular-nums" style={{ color: jobColor }}>
+                <div
+                  className="z-10 text-[11px] font-bold tabular-nums"
+                  style={{ color: actor.isDead ? "#6B7280" : jobColor }}
+                >
                   {formatInt(actor.dps)}
                 </div>
               </div>

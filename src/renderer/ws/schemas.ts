@@ -13,18 +13,6 @@ export const ConfidenceSchema = z.object({
   reasons: z.array(z.string()),
 });
 
-export const ActorSnapshotSchema = z.object({
-  actorId: ActorIdSchema,
-  name: z.string(),
-  totalDamage: z.number(),
-  dps: z.number(),
-  onlineRdps: z.number(),
-  rdpsConfidence: ConfidenceSchema,
-  damagePercent: z.number(), // 0.0 ~ 1.0
-  hitCount: z.number(),
-  recentDps: z.number(),
-});
-
 export const PaceComparisonSchema = z.object({
   profileLabel: z.string(),
   expectedCumulativeDamage: z.number(),
@@ -35,6 +23,21 @@ export const PaceComparisonSchema = z.object({
   referenceKillTimeMs: z.number(),
 });
 
+export const ActorSnapshotSchema = z.object({
+  actorId: ActorIdSchema,
+  name: z.string(),
+  jobId: z.number(),
+  totalDamage: z.number(),
+  dps: z.number(),
+  onlineRdps: z.number(),
+  rdpsConfidence: ConfidenceSchema,
+  damagePercent: z.number(), // 0.0 ~ 1.0
+  hitCount: z.number(),
+  recentDps: z.number(),
+  individualPace: PaceComparisonSchema.nullable(),
+  isDead: z.boolean(),
+});
+
 export const OverlaySnapshotSchema = z.object({
   fightName: z.string(),
   phase: z.enum(["IDLE", "ACTIVE", "ENDED"]),
@@ -43,7 +46,7 @@ export const OverlaySnapshotSchema = z.object({
   totalPartyDamage: z.number(),
   partyDps: z.number(),
   actors: z.array(ActorSnapshotSchema),
-  paceComparison: PaceComparisonSchema.nullable(),
+  partyPace: PaceComparisonSchema.nullable(),
   isFinal: z.boolean(),
 });
 
@@ -65,6 +68,7 @@ export type ActorUi = {
   confidence: number;
   damagePercent: number;
   recentDps: number;
+  isDead: boolean;
 };
 
 export type OverlayUi = {
@@ -81,6 +85,12 @@ export type OverlayUi = {
     dps: number;
     rdps: number;
     confidence: number;
+    individualPace: {
+      label: string;
+      expectedDps: number;
+      delta: number;
+      deltaPercent: number;
+    } | null;
   } | null;
 
   // 페이스 비교
