@@ -25,10 +25,10 @@ export const PaceComparisonSchema = z.object({
 
 export const ClearabilityCheckSchema = z.object({
   canClear: z.boolean(),
-  estimatedKillTimeSeconds: z.number(),
-  enrageTimeSeconds: z.number(),
-  marginSeconds: z.number(),
-  requiredDps: z.number(),
+  estimatedKillTimeSeconds: z.coerce.number(),
+  enrageTimeSeconds: z.coerce.number(),
+  marginSeconds: z.coerce.number(),
+  requiredDps: z.coerce.number(),
   confidence: z.enum(["LOW", "MEDIUM", "HIGH"]),
 });
 
@@ -55,6 +55,7 @@ export const OverlaySnapshotSchema = z.object({
   elapsedFormatted: z.string(),
   totalPartyDamage: z.number(),
   partyDps: z.number(),
+  partyRdps: z.number().optional(),
   actors: z.array(ActorSnapshotSchema),
   partyPace: PaceComparisonSchema.nullable(),
   clearability: ClearabilityCheckSchema.nullable(),
@@ -89,6 +90,7 @@ export type OverlayUi = {
 
   // 파티 전체
   partyDps: number;
+  partyRdps: number;
   totalDamage: number;
 
   // 본인 (YOU)
@@ -117,7 +119,6 @@ export type OverlayUi = {
     estimatedKillTimeSeconds: number;
     enrageTimeSeconds: number;
     marginSeconds: number;
-    requiredDps: number;
     confidence: "LOW" | "MEDIUM" | "HIGH";
   } | null;
 

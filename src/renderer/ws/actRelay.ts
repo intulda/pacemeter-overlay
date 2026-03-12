@@ -19,6 +19,41 @@ type Options = {
   onStatusChange?: (status: RelayConnectionState) => void;
 };
 
+type RelayBootstrapCache = {
+  primaryPlayer: Extract<RelayEnvelope, { type: "changePrimaryPlayer" }> | null;
+  zone: Extract<RelayEnvelope, { type: "changeZone" }> | null;
+  combatants: Extract<RelayEnvelope, { type: "combatantAdded" }>[];
+  memberCount: number;
+};
+
+const bootstrapStorageKey = (sessionId: string) => `pacemeter.relay.bootstrap.${sessionId}`;
+
+function loadBootstrapCache(sessionId: string): RelayBootstrapCache {
+  try {
+    const raw = window.localStorage.getItem(bootstrapStorageKey(sessionId));
+    if (!raw) {
+      return { primaryPlayer: null, zone: null, combatants: [], memberCount: 0 };
+    }
+    const parsed = JSON.parse(raw) as Partial<RelayBootstrapCache>;
+    return {
+      primaryPlayer: parsed.primaryPlayer ?? null,
+      zone: parsed.zone ?? null,
+      combatants: parsed.combatants ?? [],
+      memberCount: parsed.memberCount ?? 0,
+    };
+  } catch {
+    return { primaryPlayer: null, zone: null, combatants: [], memberCount: 0 };
+  }
+}
+
+function saveBootstrapCache(sessionId: string, cache: RelayBootstrapCache) {
+  try {
+    window.localStorage.setItem(bootstrapStorageKey(sessionId), JSON.stringify(cache));
+  } catch {
+    // ignore storage failures
+  }
+}
+
 export function startActRelayClient({
   serverBaseUrl,
   sessionId,
@@ -32,11 +67,26 @@ export function startActRelayClient({
   let retry = 0;
   let inflight = false;
   let queue: RelayEnvelope[] = [];
+  let needsBootstrap = true;
+  const persisted = loadBootstrapCache(sessionId);
+  let lastPrimaryPlayer: Extract<RelayEnvelope, { type: "changePrimaryPlayer" }> | null = persisted.primaryPlayer;
+  let lastZone: Extract<RelayEnvelope, { type: "changeZone" }> | null = persisted.zone;
+  let lastCombatants: Extract<RelayEnvelope, { type: "combatantAdded" }>[] = persisted.combatants;
+  let lastMemberCount = persisted.memberCount;
 
   const relayUrl = toRelayUrl(serverBaseUrl, sessionId);
 
   const setStatus = (status: RelayConnectionState) => {
     onStatusChange?.(status);
+  };
+
+  const persistBootstrap = () => {
+    saveBootstrapCache(sessionId, {
+      primaryPlayer: lastPrimaryPlayer,
+      zone: lastZone,
+      combatants: lastCombatants,
+      memberCount: lastMemberCount,
+    });
   };
 
   const enqueue = (event: RelayEnvelope) => {
@@ -49,6 +99,29 @@ export function startActRelayClient({
     }
   };
 
+  const bootstrapEvents = (): RelayEnvelope[] => {
+    const events: RelayEnvelope[] = [];
+    if (lastPrimaryPlayer) {
+      events.push(lastPrimaryPlayer);
+    }
+    if (lastZone) {
+      events.push(lastZone);
+    }
+    if (lastCombatants.length > 0) {
+      events.push(...lastCombatants);
+      events.push({
+        type: "combatDataReady",
+        memberCount: lastMemberCount,
+      });
+      if (lastPrimaryPlayer) {
+        // Re-assert the authoritative current player after combatants are restored
+        // so the backend can refresh individual profile state with a known jobId.
+        events.push(lastPrimaryPlayer);
+      }
+    }
+    return events;
+  };
+
   const flush = async () => {
     if (stopped || inflight || queue.length === 0) {
       return;
@@ -56,6 +129,9 @@ export function startActRelayClient({
 
     inflight = true;
     const batch = queue.splice(0, MAX_BATCH_SIZE);
+    const payload = needsBootstrap
+      ? bootstrapEvents().concat(batch).slice(0, MAX_QUEUE_SIZE)
+      : batch;
 
     try {
       const response = await fetch(relayUrl, {
@@ -63,15 +139,18 @@ export function startActRelayClient({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(batch),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         throw new Error(`relay failed: ${response.status}`);
       }
+      needsBootstrap = false;
+      setStatus("CONNECTED");
     } catch (error) {
       console.warn("[act-relay] flush failed", error);
       queue = batch.concat(queue).slice(0, MAX_QUEUE_SIZE);
+      needsBootstrap = true;
       setStatus("ERROR");
     } finally {
       inflight = false;
@@ -91,18 +170,22 @@ export function startActRelayClient({
 
   const handleCombatData = (root: any) => {
     if (!root?.isActive || typeof root.Combatant !== "object" || root.Combatant == null) {
+      lastCombatants = [];
+      lastMemberCount = 0;
+      persistBootstrap();
       return;
     }
 
     const ts = new Date().toISOString();
     let memberCount = 0;
+    const combatants: Extract<RelayEnvelope, { type: "combatantAdded" }>[] = [];
     for (const [name, combatant] of Object.entries<any>(root.Combatant)) {
       const actorId = parseActorId(combatant?.ID);
       if (actorId === 0) {
         continue;
       }
       memberCount += 1;
-      enqueue({
+      const event = {
         type: "combatantAdded",
         ts,
         actorId,
@@ -110,8 +193,13 @@ export function startActRelayClient({
         jobId: Number(combatant?.Job ?? 0),
         currentHp: parseDecimalLong(combatant?.CurrentHP),
         maxHp: parseDecimalLong(combatant?.MaxHP),
-      });
+      } satisfies Extract<RelayEnvelope, { type: "combatantAdded" }>;
+      combatants.push(event);
+      enqueue(event);
     }
+    lastCombatants = combatants;
+    lastMemberCount = memberCount;
+    persistBootstrap();
 
     enqueue({
       type: "combatDataReady",
@@ -152,12 +240,14 @@ export function startActRelayClient({
           const playerId = Number(payload?.charID ?? 0);
           const playerName = String(payload?.charName ?? "");
           if (playerId !== 0 && playerName.length > 0) {
-            enqueue({
+            lastPrimaryPlayer = {
               type: "changePrimaryPlayer",
               ts: new Date().toISOString(),
               playerId,
               playerName,
-            });
+            };
+            persistBootstrap();
+            enqueue(lastPrimaryPlayer);
           }
           return;
         }
@@ -166,12 +256,14 @@ export function startActRelayClient({
           const zoneId = Number(payload?.zoneID ?? 0);
           const zoneName = String(payload?.zoneName ?? "");
           if (zoneId > 0) {
-            enqueue({
+            lastZone = {
               type: "changeZone",
               ts: new Date().toISOString(),
               zoneId,
               zoneName,
-            });
+            };
+            persistBootstrap();
+            enqueue(lastZone);
           }
           return;
         }

@@ -6,11 +6,6 @@ import { useOverlayStore } from '../store/overlayStore';
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
 
 const formatInt = (n: number) => Math.round(n).toLocaleString();
-const formatCompactInt = (n: number) => {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}k`;
-  return `${Math.round(n)}`;
-};
 const formatDelta = (n: number) => {
   const rounded = Math.round(n);
   const abs = Math.abs(rounded).toLocaleString();
@@ -158,7 +153,7 @@ export const Hud = () => {
   };
 
   const handleToggleInputMode = () => {
-    const next = inputMode === 'LIVE' ? 'REPLAY' : 'LIVE';
+    const next = inputMode === 'REPLAY' ? 'REPLAY' : 'LIVE';
     persistInputMode(next);
     setInputMode(next);
     setDebugData(null);
@@ -320,10 +315,6 @@ export const Hud = () => {
                 {formatSignedTime(clearability.marginSeconds)}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-white/55">필요 DPS</span>
-              <span className="font-semibold text-white">{formatCompactInt(clearability.requiredDps)}</span>
-            </div>
           </div>
 
           {clearability.confidence === 'LOW' && (
@@ -427,7 +418,7 @@ export const Hud = () => {
           </div>
           {data.you.individualPace && (
             <div className="flex flex-col items-end">
-              <span className="text-[10px] text-gray-400 leading-none">TOP</span>
+              <span className="text-[10px] text-gray-400 leading-none">TOP rDPS</span>
               <span className="text-base font-semibold leading-none tabular-nums">
                 {formatInt(data.you.individualPace.expectedDps)}
                 {' '}
@@ -445,14 +436,14 @@ export const Hud = () => {
       {/* 파티 DPS: 현재값은 항상 표시, 비교군이 있으면 TOP도 함께 표시 */}
       <div className="flex justify-between items-baseline mb-1">
         <div className="flex flex-col">
-          <span className="text-[10px] text-gray-400 leading-none">PARTY</span>
+          <span className="text-[10px] text-gray-400 leading-none">PARTY rDPS</span>
           <span className="text-base font-bold leading-none tabular-nums">
-            {formatInt(data.partyDps)}
+            {formatInt(data.partyRdps)}
           </span>
         </div>
         {data.pace && (
           <div className="flex flex-col items-end">
-            <span className="text-[10px] text-gray-400 leading-none">TOP</span>
+            <span className="text-[10px] text-gray-400 leading-none">TOP PARTY rDPS</span>
             <span className="text-sm font-semibold leading-none tabular-nums">
               {formatInt(data.pace.expectedDps)}
               {' '}

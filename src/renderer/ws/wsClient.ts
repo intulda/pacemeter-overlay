@@ -12,8 +12,21 @@ export function startWsClient({ url, staleMs = 2000 }: Options) {
   let closedByUser = false;
   let retry = 0;
   let lastTickAt = 0;
+  let reconnectTimer: number | null = null;
+  let reconnectScheduled = false;
 
   const setConn = (c: any) => useOverlayStore.getState().setConnection(c);
+
+  const scheduleReconnect = () => {
+    if (closedByUser || reconnectScheduled) return;
+    reconnectScheduled = true;
+    const delay = Math.min(5000, 250 * Math.pow(2, retry++));
+    reconnectTimer = window.setTimeout(() => {
+      reconnectScheduled = false;
+      reconnectTimer = null;
+      connect();
+    }, delay);
+  };
 
   const startStaleTimer = () => {
     const timer = setInterval(() => {
@@ -38,6 +51,11 @@ export function startWsClient({ url, staleMs = 2000 }: Options) {
     ws.onopen = () => {
       console.log("[ws] connected to", url);
       retry = 0;
+      reconnectScheduled = false;
+      if (reconnectTimer != null) {
+        window.clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
       setConn("CONNECTED_IDLE");
       startStaleTimer();
     };
@@ -46,8 +64,7 @@ export function startWsClient({ url, staleMs = 2000 }: Options) {
       console.log("[ws] disconnected");
       useOverlayStore.getState().setData(null);
       setConn("DISCONNECTED");
-      const delay = Math.min(5000, 250 * Math.pow(2, retry++));
-      setTimeout(connect, delay);
+      scheduleReconnect();
     };
 
     ws.onmessage = (ev) => {
@@ -73,6 +90,8 @@ export function startWsClient({ url, staleMs = 2000 }: Options) {
 
     ws.onerror = (err) => {
       console.error("[ws] error", err);
+      setConn("DISCONNECTED");
+      scheduleReconnect();
     };
   };
 
@@ -81,6 +100,9 @@ export function startWsClient({ url, staleMs = 2000 }: Options) {
   return {
     stop() {
       closedByUser = true;
+      if (reconnectTimer != null) {
+        window.clearTimeout(reconnectTimer);
+      }
       if (ws && ws.readyState === WebSocket.OPEN) ws.close();
       setConn("DISCONNECTED");
     },

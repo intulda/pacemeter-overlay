@@ -6,7 +6,7 @@ export type InputMode = "LIVE" | "REPLAY";
 
 export function getServerBaseUrl(): string {
   const stored = window.localStorage.getItem(SERVER_URL_KEY)?.trim();
-  return stored && stored.length > 0 ? stored : "http://127.0.0.1:8080";
+  return stored && stored.length > 0 ? stored : "http://localhost:8080";
 }
 
 export function setServerBaseUrl(next: string) {
@@ -29,7 +29,7 @@ export function resetSessionId(): string {
 
 export function getInputMode(): InputMode {
   const stored = window.localStorage.getItem(INPUT_MODE_KEY);
-  return stored === "REPLAY" ? "REPLAY" : "REPLAY";
+  return stored === "REPLAY" ? "REPLAY" : "LIVE";
 }
 
 export function setInputMode(next: InputMode) {
