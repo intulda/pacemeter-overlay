@@ -23,6 +23,15 @@ export const PaceComparisonSchema = z.object({
   referenceKillTimeMs: z.number(),
 });
 
+export const ClearabilityCheckSchema = z.object({
+  canClear: z.boolean(),
+  estimatedKillTimeSeconds: z.number(),
+  enrageTimeSeconds: z.number(),
+  marginSeconds: z.number(),
+  requiredDps: z.number(),
+  confidence: z.enum(["LOW", "MEDIUM", "HIGH"]),
+});
+
 export const ActorSnapshotSchema = z.object({
   actorId: ActorIdSchema,
   name: z.string(),
@@ -34,6 +43,7 @@ export const ActorSnapshotSchema = z.object({
   damagePercent: z.number(), // 0.0 ~ 1.0
   hitCount: z.number(),
   recentDps: z.number(),
+  isCurrentPlayer: z.boolean(),
   individualPace: PaceComparisonSchema.nullable(),
   isDead: z.boolean(),
 });
@@ -47,6 +57,7 @@ export const OverlaySnapshotSchema = z.object({
   partyDps: z.number(),
   actors: z.array(ActorSnapshotSchema),
   partyPace: PaceComparisonSchema.nullable(),
+  clearability: ClearabilityCheckSchema.nullable(),
   isFinal: z.boolean(),
 });
 
@@ -101,6 +112,15 @@ export type OverlayUi = {
     deltaPercent: number;
   } | null;
 
+  clearability: {
+    canClear: boolean;
+    estimatedKillTimeSeconds: number;
+    enrageTimeSeconds: number;
+    marginSeconds: number;
+    requiredDps: number;
+    confidence: "LOW" | "MEDIUM" | "HIGH";
+  } | null;
+
   // 파티원 목록
   actors: ActorUi[];
 };
@@ -112,5 +132,6 @@ export type OverlayUi = {
 export type OverlaySnapshot = z.infer<typeof OverlaySnapshotSchema>;
 export type ActorSnapshot = z.infer<typeof ActorSnapshotSchema>;
 export type PaceComparison = z.infer<typeof PaceComparisonSchema>;
+export type ClearabilityCheck = z.infer<typeof ClearabilityCheckSchema>;
 export type Confidence = z.infer<typeof ConfidenceSchema>;
 export type OverlayMessage = z.infer<typeof OverlayMessageSchema>;

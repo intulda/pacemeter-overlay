@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -29,7 +29,10 @@ let win: BrowserWindow | null
 function createWindow() {
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
-    width: 320,
+    width: 375,
+    height: 180,
+    minWidth: 375,
+    minHeight: 180,
     alwaysOnTop: true,
     frame: false,
     transparent: true,
@@ -54,6 +57,21 @@ function createWindow() {
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
 }
+
+ipcMain.handle('overlay:resize', (_event, nextHeight: number) => {
+  if (!win || win.isDestroyed()) {
+    return
+  }
+
+  const boundedHeight = Math.max(1, Math.ceil(nextHeight || 0))
+  const [currentWidth] = win.getContentSize()
+  const [, currentHeight] = win.getContentSize()
+  win.setMinimumSize(375, boundedHeight)
+  if (Math.abs(currentHeight - boundedHeight) <= 1) {
+    return
+  }
+  win.setContentSize(Math.max(375, currentWidth), boundedHeight)
+})
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

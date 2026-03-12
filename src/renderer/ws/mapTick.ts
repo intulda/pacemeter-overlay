@@ -63,8 +63,8 @@ export function snapshotToUi(snapshot: OverlaySnapshot): OverlayUi {
     isDead: actor.isDead,
   }));
 
-  // 본인(YOU) 찾기 - individualPace가 있는 캐릭터가 본인
-  const youActor = snapshot.actors.find(a => a.individualPace !== null);
+  // 본인(YOU) 찾기 - 백엔드가 명시적으로 표시
+  const youActor = snapshot.actors.find((a) => a.isCurrentPlayer);
   const you = youActor ? {
     dps: youActor.dps,
     rdps: youActor.onlineRdps,
@@ -99,6 +99,14 @@ export function snapshotToUi(snapshot: OverlaySnapshot): OverlayUi {
     elapsed: snapshot.elapsedFormatted,
     partyDps: snapshot.partyDps,
     totalDamage: snapshot.totalPartyDamage,
+    clearability: snapshot.clearability ? {
+      canClear: snapshot.clearability.canClear,
+      estimatedKillTimeSeconds: snapshot.clearability.estimatedKillTimeSeconds,
+      enrageTimeSeconds: snapshot.clearability.enrageTimeSeconds,
+      marginSeconds: snapshot.clearability.marginSeconds,
+      requiredDps: snapshot.clearability.requiredDps,
+      confidence: snapshot.clearability.confidence,
+    } : null,
     you,
     pace,
     actors,
