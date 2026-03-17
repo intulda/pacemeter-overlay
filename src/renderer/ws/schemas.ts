@@ -83,6 +83,14 @@ export type ActorUi = {
   isDead: boolean;
 };
 
+export type ClearabilityType = {
+  canClear: boolean;
+  estimatedKillTimeSeconds: number;
+  enrageTimeSeconds: number;
+  marginSeconds: number;
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+};
+
 export type OverlayUi = {
   fightName: string;
   phase: "IDLE" | "ACTIVE" | "ENDED";
@@ -114,13 +122,7 @@ export type OverlayUi = {
     deltaPercent: number;
   } | null;
 
-  clearability: {
-    canClear: boolean;
-    estimatedKillTimeSeconds: number;
-    enrageTimeSeconds: number;
-    marginSeconds: number;
-    confidence: "LOW" | "MEDIUM" | "HIGH";
-  } | null;
+  clearability: ClearabilityType | null;
 
   // 파티원 목록
   actors: ActorUi[];
