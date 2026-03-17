@@ -22,3 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# build outputs
+release/
+dist-electron/
+out/
+
+# electron-builder
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.blockmap
+
+# cache
+.cache/
+electron-builder-cache/
