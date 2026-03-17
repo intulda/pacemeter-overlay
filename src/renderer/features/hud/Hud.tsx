@@ -8,6 +8,7 @@ import {
 } from "@/renderer/config/runtime";
 import { useOverlayStore } from "@/renderer/features/hud/store/overlayStore";
 import { logMock } from "@/renderer/features/hud/__mocks__/logMock";
+import { getJobColor } from "@/renderer/features/shared/utils/getJobColor";
 
 const clamp = (n: number, min: number, max: number) =>
   Math.min(Math.max(n, min), max);
@@ -66,36 +67,6 @@ type CombatDebugSnapshot = {
   currentPlayerId: { value: number } | null;
   currentPlayer: DebugActor | null;
   actors: DebugActor[];
-};
-
-const getJobColor = (job: string): string => {
-  const colors: Record<string, string> = {
-    // Tank
-    PLD: "#A7BAE2",
-    WAR: "#CF5151",
-    DRK: "#D126CC",
-    GNB: "#998D50",
-    // Healer
-    WHM: "#FFF5EE",
-    SCH: "#8657FF",
-    AST: "#FFE74A",
-    SGE: "#80D1BA",
-    // DPS
-    MNK: "#D69C52",
-    DRG: "#4164CD",
-    BRD: "#91BA5E",
-    BLM: "#A579D6",
-    SMN: "#2D9B78",
-    NIN: "#AF1964",
-    MCH: "#6EE1D6",
-    RDM: "#E87B7B",
-    SAM: "#E46D2D",
-    DNC: "#E2B0AF",
-    RPR: "#965A90",
-    VPR: "#52A35C",
-    PCT: "#D15D98",
-  };
-  return colors[job?.toUpperCase()] || "#CBD5E1"; // 기본값 gray-300
 };
 
 export const Hud = () => {
