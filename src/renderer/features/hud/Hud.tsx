@@ -7,6 +7,7 @@ import {
   toDebugUrl,
 } from "@/renderer/config/runtime";
 import { useOverlayStore } from "@/renderer/features/hud/store/overlayStore";
+import { logMock } from "@/renderer/features/hud/__mocks__/logMock";
 
 const clamp = (n: number, min: number, max: number) =>
   Math.min(Math.max(n, min), max);
@@ -99,7 +100,7 @@ const getJobColor = (job: string): string => {
 
 export const Hud = () => {
   const {
-    data,
+    // data,
     connection,
     actRelayConnection,
     serverBaseUrl,
@@ -115,6 +116,9 @@ export const Hud = () => {
     setServerBaseUrl,
     setSessionId,
   } = useOverlayStore();
+
+  const data = logMock;
+
   const [debugData, setDebugData] = useState<CombatDebugSnapshot | null>(null);
 
   useEffect(() => {
