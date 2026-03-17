@@ -1,5 +1,5 @@
 import { toRelayUrl } from "../config/runtime";
-import type { RelayConnectionState } from "../store/overlayStore";
+import type { RelayConnectionState } from "@/renderer/features/hud/store/overlayStore";
 
 const ACT_WS_URL = "ws://127.0.0.1:10501/ws";
 const MAX_BATCH_SIZE = 200;
@@ -7,9 +7,22 @@ const MAX_QUEUE_SIZE = 5000;
 
 type RelayEnvelope =
   | { type: "rawLine"; rawLine: string }
-  | { type: "changePrimaryPlayer"; ts: string; playerId: number; playerName: string }
+  | {
+      type: "changePrimaryPlayer";
+      ts: string;
+      playerId: number;
+      playerName: string;
+    }
   | { type: "changeZone"; ts: string; zoneId: number; zoneName: string }
-  | { type: "combatantAdded"; ts: string; actorId: number; name: string; jobId: number; currentHp: number; maxHp: number }
+  | {
+      type: "combatantAdded";
+      ts: string;
+      actorId: number;
+      name: string;
+      jobId: number;
+      currentHp: number;
+      maxHp: number;
+    }
   | { type: "combatDataReady"; memberCount: number };
 
 type Options = {
@@ -26,13 +39,19 @@ type RelayBootstrapCache = {
   memberCount: number;
 };
 
-const bootstrapStorageKey = (sessionId: string) => `pacemeter.relay.bootstrap.${sessionId}`;
+const bootstrapStorageKey = (sessionId: string) =>
+  `pacemeter.relay.bootstrap.${sessionId}`;
 
 function loadBootstrapCache(sessionId: string): RelayBootstrapCache {
   try {
     const raw = window.localStorage.getItem(bootstrapStorageKey(sessionId));
     if (!raw) {
-      return { primaryPlayer: null, zone: null, combatants: [], memberCount: 0 };
+      return {
+        primaryPlayer: null,
+        zone: null,
+        combatants: [],
+        memberCount: 0,
+      };
     }
     const parsed = JSON.parse(raw) as Partial<RelayBootstrapCache>;
     return {
@@ -48,7 +67,10 @@ function loadBootstrapCache(sessionId: string): RelayBootstrapCache {
 
 function saveBootstrapCache(sessionId: string, cache: RelayBootstrapCache) {
   try {
-    window.localStorage.setItem(bootstrapStorageKey(sessionId), JSON.stringify(cache));
+    window.localStorage.setItem(
+      bootstrapStorageKey(sessionId),
+      JSON.stringify(cache),
+    );
   } catch {
     // ignore storage failures
   }
@@ -69,9 +91,14 @@ export function startActRelayClient({
   let queue: RelayEnvelope[] = [];
   let needsBootstrap = true;
   const persisted = loadBootstrapCache(sessionId);
-  let lastPrimaryPlayer: Extract<RelayEnvelope, { type: "changePrimaryPlayer" }> | null = persisted.primaryPlayer;
-  let lastZone: Extract<RelayEnvelope, { type: "changeZone" }> | null = persisted.zone;
-  let lastCombatants: Extract<RelayEnvelope, { type: "combatantAdded" }>[] = persisted.combatants;
+  let lastPrimaryPlayer: Extract<
+    RelayEnvelope,
+    { type: "changePrimaryPlayer" }
+  > | null = persisted.primaryPlayer;
+  let lastZone: Extract<RelayEnvelope, { type: "changeZone" }> | null =
+    persisted.zone;
+  let lastCombatants: Extract<RelayEnvelope, { type: "combatantAdded" }>[] =
+    persisted.combatants;
   let lastMemberCount = persisted.memberCount;
 
   const relayUrl = toRelayUrl(serverBaseUrl, sessionId);
@@ -169,7 +196,11 @@ export function startActRelayClient({
   };
 
   const handleCombatData = (root: any) => {
-    if (!root?.isActive || typeof root.Combatant !== "object" || root.Combatant == null) {
+    if (
+      !root?.isActive ||
+      typeof root.Combatant !== "object" ||
+      root.Combatant == null
+    ) {
       lastCombatants = [];
       lastMemberCount = 0;
       persistBootstrap();
@@ -221,7 +252,12 @@ export function startActRelayClient({
       ws?.send(
         JSON.stringify({
           call: "subscribe",
-          events: ["CombatData", "ChangePrimaryPlayer", "LogLine", "ChangeZone"],
+          events: [
+            "CombatData",
+            "ChangePrimaryPlayer",
+            "LogLine",
+            "ChangeZone",
+          ],
         }),
       );
     };
@@ -231,7 +267,11 @@ export function startActRelayClient({
         const payload = JSON.parse(event.data);
         const type = payload?.type;
 
-        if (type === "LogLine" && typeof payload?.rawLine === "string" && payload.rawLine.length > 0) {
+        if (
+          type === "LogLine" &&
+          typeof payload?.rawLine === "string" &&
+          payload.rawLine.length > 0
+        ) {
           enqueue({ type: "rawLine", rawLine: payload.rawLine });
           return;
         }
@@ -302,7 +342,11 @@ export function startActRelayClient({
       if (flushTimer != null) {
         window.clearInterval(flushTimer);
       }
-      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      if (
+        ws &&
+        (ws.readyState === WebSocket.OPEN ||
+          ws.readyState === WebSocket.CONNECTING)
+      ) {
         ws.close();
       }
     },

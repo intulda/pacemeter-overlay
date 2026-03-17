@@ -1,6 +1,6 @@
-import { OverlayMessageSchema } from "./schemas";
-import { useOverlayStore } from "../store/overlayStore";
-import { snapshotToUi } from "./mapTick";
+import { useOverlayStore } from "@/renderer/features/hud/store/overlayStore";
+import { snapshotToUi } from "@/renderer/ws/mapTick";
+import { OverlayMessageSchema } from "@/renderer/ws/schemas";
 
 type Options = {
   url: string;
