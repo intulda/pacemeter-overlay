@@ -1,9 +1,14 @@
 import { useEffect, useRef } from "react";
-import { getInputMode, getServerBaseUrl, getSessionId, toOverlayWsUrl } from "./config/runtime";
-import { Hud } from "./ui/Hud";
-import { useOverlayStore } from "./store/overlayStore";
-import { startActRelayClient } from "./ws/actRelay";
-import { startWsClient } from "./ws/wsClient";
+import {
+  getInputMode,
+  getServerBaseUrl,
+  getSessionId,
+  toOverlayWsUrl,
+} from "@/renderer/config/runtime";
+import { Hud } from "@/renderer/features/hud/Hud";
+import { useOverlayStore } from "@/renderer/features/hud/store/overlayStore";
+import { startWsClient } from "@/renderer/ws/wsClient";
+import { startActRelayClient } from "@/renderer/ws/actRelay";
 
 export default function App() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -28,15 +33,19 @@ export default function App() {
 
   useEffect(() => {
     const wsClient = startWsClient({
-      url: toOverlayWsUrl(serverBaseUrl, inputMode === "LIVE" ? sessionId : undefined),
+      url: toOverlayWsUrl(
+        serverBaseUrl,
+        inputMode === "LIVE" ? sessionId : undefined,
+      ),
     });
-    const relayClient = inputMode === "LIVE"
-      ? startActRelayClient({
-          serverBaseUrl,
-          sessionId,
-          onStatusChange: setActRelayConnection,
-        })
-      : null;
+    const relayClient =
+      inputMode === "LIVE"
+        ? startActRelayClient({
+            serverBaseUrl,
+            sessionId,
+            onStatusChange: setActRelayConnection,
+          })
+        : null;
     if (inputMode !== "LIVE") {
       setActRelayConnection("DISCONNECTED");
     }

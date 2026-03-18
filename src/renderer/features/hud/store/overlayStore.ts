@@ -1,6 +1,11 @@
 import { create } from "zustand";
-import { getInputMode, getServerBaseUrl, getSessionId, type InputMode } from "../config/runtime";
-import type { OverlayUi } from "../ws/schemas";
+import {
+  getInputMode,
+  getServerBaseUrl,
+  getSessionId,
+  type InputMode,
+} from "@/renderer/config/runtime";
+import { OverlayUi } from "@/renderer/ws/schemas";
 
 export type ConnectionState =
   | "DISCONNECTED"

@@ -1,16 +1,22 @@
 @import "tailwindcss";
 
-html, body, #root {
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    overflow: hidden;
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+button:hover {
+  cursor: pointer;
 }
 
 .drag-region {
-    -webkit-app-region: drag;
+  -webkit-app-region: drag;
 }
 
 .no-drag {
-    -webkit-app-region: no-drag;
+  -webkit-app-region: no-drag;
 }
