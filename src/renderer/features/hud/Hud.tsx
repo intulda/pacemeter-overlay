@@ -8,7 +8,6 @@ import {
 } from "@/renderer/config/runtime";
 import { useOverlayStore } from "@/renderer/features/hud/store/overlayStore";
 import { logMock } from "@/renderer/features/hud/__mocks__/logMock";
-import { getJobColor } from "@/renderer/features/shared/utils/getJobColor";
 import {
   clamp,
   formatDelta,
@@ -16,7 +15,9 @@ import {
   formatJobId,
   formatPercentLabel,
 } from "@/renderer/features/shared/utils/format";
-import ClearAbility from "@/renderer/features/hud/components/Clearability";
+import ClearAbility from "@/renderer/features/hud/components/ClearAbility";
+import { Settings } from "lucide-react";
+import PartyMembers from "./components/PartyMembers";
 
 type DebugBuff = {
   buffId: number;
@@ -231,20 +232,25 @@ export const Hud = () => {
             </button>
           )}
         </div>
-        <button
-          onClick={toggleShowDebug}
-          className="no-drag text-[10px] px-1.5 py-0.5 mr-1 rounded bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25"
-          title="Ctrl+Shift+D"
-        >
-          {showDebug ? "DEBUG ON" : "DEBUG"}
-        </button>
-        <button
-          onClick={toggleLocked}
-          className="no-drag text-[10px] px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20"
-          title="Ctrl+Shift+O"
-        >
-          {locked ? "LOCK" : "MOVE"}
-        </button>
+        <div className="flex items-center gap-1.5 text-[10px] text-white/60">
+          <button
+            onClick={toggleShowDebug}
+            className="no-drag text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25"
+            title="Ctrl+Shift+D"
+          >
+            {showDebug ? "DEBUG ON" : "DEBUG"}
+          </button>
+          <button
+            onClick={toggleLocked}
+            className="no-drag text-[10px] px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20"
+            title="Ctrl+Shift+O"
+          >
+            {locked ? "LOCK" : "MOVE"}
+          </button>
+          <button onClick={() => {}} className="no-drag ">
+            <Settings size={15} className={clsx("hover:fill-white/20")} />
+          </button>
+        </div>
       </div>
 
       {clearability && <ClearAbility clearability={clearability} />}
@@ -451,66 +457,7 @@ export const Hud = () => {
       </div>
 
       {/* 파티원 목록 (확장 가능) */}
-      <div
-        className={clsx(
-          "grid transition-[grid-template-rows,opacity,margin] duration-300 ease-in-out",
-          showParty
-            ? "grid-rows-[1fr] opacity-100 mt-2 pointer-events-auto"
-            : "grid-rows-[0fr] opacity-0 mt-0 pointer-events-none",
-        )}
-      >
-        <div className="overflow-hidden space-y-0.5">
-          {data.actors.map((actor, idx) => {
-            const jobColor = getJobColor(actor.job);
-            const maxRdps = Math.max(...data.actors.map((a) => a.rdps), 1);
-            const barWidth = (actor.rdps / maxRdps) * 100;
-
-            return (
-              <div
-                key={actor.id}
-                className={clsx(
-                  "relative flex items-center justify-between h-6 px-2 rounded overflow-hidden transition-opacity",
-                  actor.isDead && "opacity-40",
-                )}
-              >
-                <div
-                  className="absolute left-0 top-0 h-full opacity-15"
-                  style={{ width: `${barWidth}%`, backgroundColor: jobColor }}
-                />
-                <div className="flex items-center gap-2 z-10">
-                  <span className="text-[9px] text-gray-500 w-3">
-                    {idx + 1}
-                  </span>
-                  {actor.isDead && <span className="text-[10px]">💀</span>}
-                  <img
-                    src={`/icons/jobs/${actor.job}.png`}
-                    className="w-3.5 h-3.5 object-contain"
-                    alt={actor.job}
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                  <span
-                    className={clsx(
-                      "text-[11px] font-medium truncate w-24",
-                      actor.isDead && "line-through",
-                    )}
-                    style={{ color: actor.isDead ? "#6B7280" : jobColor }}
-                  >
-                    {actor.name}
-                  </span>
-                </div>
-                <div
-                  className="z-10 text-[11px] font-bold tabular-nums"
-                  style={{ color: actor.isDead ? "#6B7280" : jobColor }}
-                >
-                  {formatInt(actor.rdps)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <PartyMembers showParty={showParty} memberData={data.actors} />
     </div>
   );
 };
