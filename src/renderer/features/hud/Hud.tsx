@@ -16,8 +16,8 @@ import {
   formatPercentLabel,
 } from "@/renderer/features/shared/utils/format";
 import ClearAbility from "@/renderer/features/hud/components/ClearAbility";
+import PartyMembers from "@/renderer/features/hud/components/PartyMembers";
 import { Settings } from "lucide-react";
-import PartyMembers from "./components/PartyMembers";
 
 type DebugBuff = {
   buffId: number;
@@ -200,11 +200,11 @@ export const Hud = () => {
   return (
     <div
       className={clsx(
-        "w-full h-auto bg-black/80 text-white p-2 font-mono select-none border border-white/10 rounded-lg shadow-2xl overflow-hidden",
+        "w-full h-auto bg-black/80 text-white p-2 font-mono select-none border border-white/10 rounded-lg shadow-2xl overflow-hidden gap-1.5 flex flex-col",
         locked ? "" : "drag-region",
       )}
     >
-      <div className="flex justify-end mb-1">
+      <div className="flex justify-end">
         <div className="mr-auto flex items-center gap-1.5 text-[10px] text-white/60">
           <span className={`inline-block h-2 w-2 rounded-full ${relayTone}`} />
           <span>{relayLabel}</span>
@@ -253,16 +253,49 @@ export const Hud = () => {
         </div>
       </div>
 
+      {/* 중단: % / 타이틀 / 시간 */}
+      <div className="flex justify-between items-center text-[11px] text-gray-300 px-0.5 no-drag">
+        <div className="flex items-center gap-2">
+          <span className="opacity-60 text-[10px] tracking-wide">
+            {data.fightName || "PACE METER"}
+          </span>
+        </div>
+        <span className="font-bold tracking-widest tabular-nums">
+          {data.elapsed}
+        </span>
+      </div>
+
+      {/* 하단: 프로그레스 바 */}
+      <div className="relative w-full h-2 bg-gray-800 rounded-full">
+        <div
+          className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+
+        {/* 연결 상태 점 */}
+        <div
+          className={clsx(
+            "absolute right-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full",
+            isDisconnected
+              ? "bg-gray-500"
+              : isActive
+                ? "bg-green-400 animate-pulse"
+                : "bg-yellow-400",
+          )}
+          title={connection}
+        />
+      </div>
+
       {clearability && <ClearAbility clearability={clearability} />}
 
       {showDebug && (
-        <div className="mb-2 rounded-lg border border-cyan-400/20 bg-cyan-500/8 px-2.5 py-2 no-drag">
+        <div className="rounded-lg border border-cyan-400/20 bg-cyan-500/8 px-2.5 py-2 no-drag">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/70">
                 Debug
               </div>
-              <div className="mt-1 text-sm font-bold text-cyan-100">
+              <div className="text-sm font-bold text-cyan-100">
                 rDPS Attribution
               </div>
             </div>
@@ -277,7 +310,7 @@ export const Hud = () => {
           </div>
 
           {debugData?.currentPlayer ? (
-            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] tabular-nums">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] tabular-nums">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-white/55">YOU</span>
                 <span className="font-semibold text-white">
@@ -331,17 +364,17 @@ export const Hud = () => {
               </div>
             </div>
           ) : (
-            <div className="mt-2 text-[11px] text-white/55">
+            <div className=" text-[11px] text-white/55">
               현재 플레이어 디버그 데이터가 아직 없습니다.
             </div>
           )}
 
           {debugData?.currentPlayer?.activeBuffs?.length ? (
-            <div className="mt-2">
+            <div className="">
               <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                 Active Buffs
               </div>
-              <div className="mt-1 flex flex-wrap gap-1.5">
+              <div className=" flex flex-wrap gap-1.5">
                 {debugData.currentPlayer.activeBuffs.slice(0, 8).map((buff) => (
                   <div
                     key={`${buff.buffId}-${buff.sourceId.value}-${buff.appliedAtMs}`}
@@ -359,11 +392,14 @@ export const Hud = () => {
 
       {/* 개인 rDPS 비교: 왼쪽=내 rDPS / 오른쪽=TOP rDPS (차이) */}
       {data.you && (
-        <div className="flex justify-between items-baseline mb-1">
+        <div className="flex justify-between items-baseline">
           <div className="flex flex-col">
             <span className="text-[10px] text-cyan-400 leading-none">rDPS</span>
-            <span className="text-xl font-bold leading-none tabular-nums">
+            <span className="text-base font-semibold leading-none tabular-nums">
               {formatInt(data.you.rdps)}
+              <span className="text-sm font-medium tabular-nums ml-1">
+                ({formatPercentLabel(pct)})
+              </span>
             </span>
           </div>
           {data.you.individualPace && (
@@ -375,6 +411,7 @@ export const Hud = () => {
                 {formatInt(data.you.individualPace.expectedDps)}{" "}
                 <span
                   className={clsx(
+                    "text-sm font-medium",
                     data.you.individualPace.delta >= 0
                       ? "text-green-400"
                       : "text-red-400",
@@ -389,7 +426,7 @@ export const Hud = () => {
       )}
 
       {/* 파티 DPS: 현재값은 항상 표시, 비교군이 있으면 TOP도 함께 표시 */}
-      <div className="flex justify-between items-baseline mb-1">
+      <div className="flex justify-between items-baseline ">
         <div className="flex flex-col">
           <span className="text-[10px] text-gray-400 leading-none">
             PARTY rDPS
@@ -417,47 +454,15 @@ export const Hud = () => {
         )}
       </div>
 
-      {/* 중단: % / 타이틀 / 시간 */}
-      <div className="flex justify-between items-center text-[11px] text-gray-300 mb-1.5 px-0.5 no-drag">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggleShowParty}
-            className="bg-white/10 px-1 rounded text-white font-bold hover:bg-white/20 transition-colors"
-          >
-            {showParty ? "▲" : "▼"} {formatPercentLabel(pct)}
-          </button>
-          <span className="opacity-60 text-[10px] tracking-wide">
-            {data.fightName || "PACE METER"}
-          </span>
-        </div>
-        <span className="font-bold tracking-widest tabular-nums">
-          {data.elapsed}
-        </span>
-      </div>
-
-      {/* 하단: 프로그레스 바 */}
-      <div className="relative w-full h-2 bg-gray-800 rounded-full">
-        <div
-          className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out"
-          style={{ width: `${pct}%` }}
-        />
-
-        {/* 연결 상태 점 */}
-        <div
-          className={clsx(
-            "absolute right-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full",
-            isDisconnected
-              ? "bg-gray-500"
-              : isActive
-                ? "bg-green-400 animate-pulse"
-                : "bg-yellow-400",
-          )}
-          title={connection}
-        />
-      </div>
-
       {/* 파티원 목록 (확장 가능) */}
       <PartyMembers showParty={showParty} memberData={data.actors} />
+
+      <button
+        onClick={toggleShowParty}
+        className="px-1 rounded text-white hover:bg-white/10 transition-colors no-drag text-sm"
+      >
+        {showParty ? "▲" : "▼"}
+      </button>
     </div>
   );
 };
