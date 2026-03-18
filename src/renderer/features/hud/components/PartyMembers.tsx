@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { formatInt } from "../../shared/utils/format";
 import { getJobColor } from "../../shared/utils/getJobColor";
 import { ActorUi } from "@/renderer/ws/schemas";
+import { JOB_ICONS } from "../../shared/constants/jobIcons";
 
 export default function PartyMembers({
   showParty,
@@ -20,7 +21,7 @@ export default function PartyMembers({
       )}
     >
       <div className="overflow-hidden space-y-0.5">
-        {memberData.map((actor, idx) => {
+        {memberData.map((actor) => {
           const jobColor = getJobColor(actor.job);
           const maxRdps = Math.max(...memberData.map((a) => a.rdps), 1);
           const barWidth = (actor.rdps / maxRdps) * 100;
@@ -38,11 +39,10 @@ export default function PartyMembers({
                 style={{ width: `${barWidth}%`, backgroundColor: jobColor }}
               />
               <div className="flex items-center gap-2 z-10">
-                <span className="text-[9px] text-gray-500 w-3">{idx + 1}</span>
                 {actor.isDead && <span className="text-[10px]">💀</span>}
                 <img
-                  src={`/icons/jobs/${actor.job}.png`}
-                  className="w-3.5 h-3.5 object-contain"
+                  src={JOB_ICONS[actor.job]}
+                  className="w-4 object-contain"
                   alt={actor.job}
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
