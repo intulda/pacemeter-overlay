@@ -46,6 +46,9 @@ export const ActorSnapshotSchema = z.object({
   isCurrentPlayer: z.boolean(),
   individualPace: PaceComparisonSchema.nullable(),
   isDead: z.boolean(),
+  deathCount: z.number(),
+  maxHitDamage: z.number(),
+  maxHitSkillName: z.string(),
 });
 
 export const OverlaySnapshotSchema = z.object({

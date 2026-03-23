@@ -39,7 +39,6 @@ export default function PartyMembers({
                 style={{ width: `${barWidth}%`, backgroundColor: jobColor }}
               />
               <div className="flex items-center gap-2 z-10">
-                {actor.isDead && <span className="text-[10px]">💀</span>}
                 <img
                   src={JOB_ICONS[actor.job]}
                   className="w-4 object-contain"
