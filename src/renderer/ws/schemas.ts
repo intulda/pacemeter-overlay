@@ -84,6 +84,9 @@ export type ActorUi = {
   damagePercent: number;
   recentDps: number;
   isDead: boolean;
+  deathCount: number;
+  maxHitDamage: number;
+  maxHitSkillName: string;
 };
 
 export type ClearabilityType = {
