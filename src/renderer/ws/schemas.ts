@@ -49,6 +49,9 @@ export const ActorSnapshotSchema = z.object({
   deathCount: z.number(),
   maxHitDamage: z.number(),
   maxHitSkillName: z.string(),
+  critRate: z.number(),
+  directHitRate: z.number(),
+  critDirectHitRate: z.number(),
 });
 
 export const OverlaySnapshotSchema = z.object({
@@ -82,11 +85,16 @@ export type ActorUi = {
   rdps: number;
   confidence: number;
   damagePercent: number;
+  hitCount: number;
   recentDps: number;
+  isCurrentPlayer: boolean;
   isDead: boolean;
   deathCount: number;
   maxHitDamage: number;
   maxHitSkillName: string;
+  critRate: number;
+  directHitRate: number;
+  critDirectHitRate: number;
 };
 
 export type ClearabilityType = {

@@ -59,11 +59,16 @@ export function snapshotToUi(snapshot: OverlaySnapshot): OverlayUi {
     rdps: actor.onlineRdps,
     confidence: actor.rdpsConfidence.score,
     damagePercent: actor.damagePercent,
+    hitCount: actor.hitCount,
     recentDps: actor.recentDps,
+    isCurrentPlayer: actor.isCurrentPlayer,
     isDead: actor.isDead,
     deathCount: actor.deathCount,
     maxHitDamage: actor.maxHitDamage,
     maxHitSkillName: actor.maxHitSkillName,
+    critRate: actor.critRate,
+    directHitRate: actor.directHitRate,
+    critDirectHitRate: actor.critDirectHitRate,
   }));
 
   // 본인(YOU) 찾기 - 백엔드가 명시적으로 표시
