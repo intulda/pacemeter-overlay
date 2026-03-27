@@ -10,6 +10,8 @@ const formatDelta = (n: number) => {
 
 const formatPercentLabel = (p: number) => `${Math.round(p)}%`;
 
+const formatDamagePercent = (p: number) => `${Math.round(p * 1000) / 10}`;
+
 const formatTimeShort = (seconds: number) => {
   if (!Number.isFinite(seconds) || seconds < 0) return "--";
   const totalSeconds = Math.round(seconds);
@@ -29,6 +31,7 @@ export {
   formatInt,
   formatDelta,
   formatPercentLabel,
+  formatDamagePercent,
   formatTimeShort,
   formatSignedTime,
   formatJobId,
