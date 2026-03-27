@@ -55,7 +55,7 @@ type CombatDebugSnapshot = {
 
 export const Hud = () => {
   const {
-    // data,
+    data,
     connection,
     actRelayConnection,
     serverBaseUrl,
@@ -72,7 +72,9 @@ export const Hud = () => {
     setSessionId,
   } = useOverlayStore();
 
-  const data = logMock;
+  // const data = logMock;
+
+  // console.log(data);
 
   const [debugData, setDebugData] = useState<CombatDebugSnapshot | null>(null);
 
@@ -148,7 +150,7 @@ export const Hud = () => {
   // 데이터가 없으면 빈 화면
   if (!data) {
     return (
-      <div className="drag-region w-full h-auto bg-black/80 text-white p-2 font-mono select-none border border-white/10 rounded-lg">
+      <div className="drag-region w-full h-auto bg-black/80 text-white p-2 select-none border border-white/10 rounded-lg">
         <div className="flex justify-between items-center">
           <span className="text-xs text-gray-400">
             Waiting for connection...
@@ -200,7 +202,7 @@ export const Hud = () => {
   return (
     <div
       className={clsx(
-        "w-full h-auto bg-black/80 text-white p-2 font-mono select-none border border-white/10 rounded-lg shadow-2xl overflow-hidden gap-1.5 flex flex-col",
+        "w-full h-auto bg-black/80 text-white p-2 select-none border border-white/10 rounded-lg shadow-2xl overflow-hidden gap-1.5 flex flex-col",
         locked ? "" : "drag-region",
       )}
     >
@@ -459,7 +461,7 @@ export const Hud = () => {
 
       <button
         onClick={toggleShowParty}
-        className="px-1 rounded text-white hover:bg-white/10 transition-colors no-drag text-sm"
+        className="px-1 rounded text-white hover:bg-white/10 transition-colors no-drag text-xs"
       >
         {showParty ? "▲" : "▼"}
       </button>
