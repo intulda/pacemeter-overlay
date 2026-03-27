@@ -77,8 +77,17 @@ export function startWsClient({ url, staleMs = 2000 }: Options) {
           return;
         }
 
+        // rdps 순서로 파티원 정렬
+        const sortedActors = [...parsed.data.snapshot.actors].sort(
+          (a, b) => b.onlineRdps - a.onlineRdps,
+        );
+        const sortedData = {
+          ...parsed.data.snapshot,
+          sortedActors,
+        };
+
         // OverlaySnapshot → OverlayUi 변환
-        const ui = snapshotToUi(parsed.data.snapshot);
+        const ui = snapshotToUi(sortedData);
         useOverlayStore.getState().setData(ui);
 
         lastTickAt = Date.now();
